@@ -3,24 +3,22 @@ module Main where
 import Data.List (find, intercalate)
 import Control.Concurrent.Thread.Delay (delay)
 
-data Tile = Head | Tail
 data Dir = N | E | S | W
 
-type Entity = (Tile, Int, Int)
 type ViewportWidth = Int
 type ViewportHeight = Int
-data GameState = GameState Dir [Entity]
+data GameState = GameState Dir (Int, Int) [(Int, Int)]
 
-lookupTile :: [Entity] -> Int -> Int -> Char
-lookupTile es x y = case find (\(_, x', y') -> x == x' && y == y') es of
-  Nothing -> '.'
-  Just (Head, _, _) -> 'H'
-  Just (Tail, _, _) -> '*'
+lookupTile :: GameState -> Int -> Int -> Char
+lookupTile (GameState _ (hx, hy) es) x y
+  | (x, y) == (hx, hy) = 'H' -- head
+  | elem (x, y) es = '*' -- tail
+  | otherwise = '.'
 
 drawScreen :: GameState -> ViewportWidth -> ViewportHeight -> IO ()
-drawScreen (GameState d es) w h = do
-  let coords = [ (x,y) | x<-[0..w], y<-[0..h] ]
-  let screen = map (\(x, y) -> lookupTile es x y) coords
+drawScreen gs w h = do
+  let coords = [ (x, y) | x <- [0..w], y <- [0..h] ]
+  let screen = map (\(x, y) -> lookupTile gs x y) coords
   let rows = map (\r -> map (\((x, y), c) -> c) $ filter (\((x, y), c) -> y == r) $ zip coords screen) [0..h]
   putStrLn (intercalate "\n" rows)
 
